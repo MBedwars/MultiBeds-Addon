@@ -1,0 +1,4 @@
+MultiBeds_BedPlacement_Title: "Configure Multi-Beds"
+MultiBeds_BedPlacement_CurrentCount: "&eAmount of beds per team: &6{count}"
+MultiBeds_BedPlacement_Place: "&e&lPlace bed #{num} for team {teamcolor}&l{team}"
+MultiBeds_BedPlacement_BedInfo: "&7You are about to place a bed for {teamcolor}{team}"
