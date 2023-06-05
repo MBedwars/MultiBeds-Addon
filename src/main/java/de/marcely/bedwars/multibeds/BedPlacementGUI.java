@@ -4,7 +4,9 @@ import de.marcely.bedwars.api.arena.Arena;
 import de.marcely.bedwars.api.arena.Team;
 import de.marcely.bedwars.api.message.Message;
 import de.marcely.bedwars.multibeds.data.ArenaData;
+import de.marcely.bedwars.multibeds.util.ItemStackUtil;
 import de.marcely.bedwars.tools.Helper;
+import de.marcely.bedwars.tools.gui.AddItemCondition;
 import de.marcely.bedwars.tools.gui.CenterFormat;
 import de.marcely.bedwars.tools.gui.GUIItem;
 import de.marcely.bedwars.tools.gui.type.ChestGUI;
@@ -22,14 +24,20 @@ import org.bukkit.inventory.ItemStack;
 @AllArgsConstructor
 public class BedPlacementGUI {
 
-  private static final ItemStack EMPTY_GLASS_PANE = Helper.get().parseItemStack("GRAY_STAINED_GLASS_PANE {DisplayName:\" \"}");
+  private static final ItemStack ITEM_EMPTY_GLASS_PANE =
+      Helper.get().parseItemStack("GRAY_STAINED_GLASS_PANE {DisplayName:\" \"}");
+  private static final ItemStack ITEM_ADD_BED =
+      Helper.get().parseItemStack("skull:eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWZmMzE0MzFkNjQ1ODdmZjZlZjk4YzA2NzU4MTA2ODFmOGMxM2JmOTZmNTFkOWNiMDdlZDc4NTJiMmZmZDEifX19"
+          + " {DisplayName:\"&a&l+1\"}");
+  private static final ItemStack ITEM_REMOVE_BED =
+      Helper.get().parseItemStack("skull:eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNGU0YjhiOGQyMzYyYzg2NGUwNjIzMDE0ODdkOTRkMzI3MmE2YjU3MGFmYmY4MGMyYzViMTQ4Yzk1NDU3OWQ0NiJ9fX0="
+          + " {DisplayName:\"&c&l-1\"}");
 
   private final MultiBedsPlugin plugin;
   private final ArenaData data;
   private final Player player;
   private final Team team;
-  private final Location position;
-  private final Consumer<Optional<Integer>> listener;
+  private Consumer<Optional<Integer>> listener;
 
   public void open() {
     final ChestGUI gui = new ChestGUI(
@@ -38,7 +46,7 @@ public class BedPlacementGUI {
             .done(this.player)
     );
 
-    gui.addCloseListener(p ->)
+    gui.addCloseListener(p -> callListener(Optional.empty()));
 
     render(gui, true);
 
@@ -58,12 +66,41 @@ public class BedPlacementGUI {
     if (newGUI) {
       // bars
       for (int x=0; x<9; x++) {
-        gui.setItem(EMPTY_GLASS_PANE, x, 0);
-        gui.setItem(EMPTY_GLASS_PANE, x, 2);
+        gui.setItem(ITEM_EMPTY_GLASS_PANE, x, 0);
+        gui.setItem(ITEM_EMPTY_GLASS_PANE, x, 2);
       }
 
       // misc
       gui.setItem(arena.getIcon(), 8, 0);
+    }
+
+    // bed amount modifiers
+    {
+      if (this.data.getBedsCount() > 1) {
+        gui.setItem(
+            ITEM_REMOVE_BED,
+            3, 1,
+            (g0, g1, g2) -> {
+              if (this.data.getBedsCount() > 1)
+                this.data.setBedsCount(this.data.getBedsCount()-1);
+
+              render(gui, false);
+            }
+        );
+      }
+
+      if (this.data.getBedsCount() < 3 * 9) {
+        gui.setItem(
+            ITEM_REMOVE_BED,
+            5, 1,
+            (g0, g1, g2) -> {
+              if (this.data.getBedsCount() < 3 * 9)
+                this.data.setBedsCount(this.data.getBedsCount()+1);
+
+              render(gui, false);
+            }
+        );
+      }
     }
 
     // beds
@@ -77,6 +114,7 @@ public class BedPlacementGUI {
       }
 
       for (int i = 0; i < this.data.getBedsCount(); i++) {
+        final int index = i;
         final List<String> lines = new ArrayList<>();
 
         lines.add(Message.buildByKey("MultiBeds_BedPlacement_Place")
@@ -90,10 +128,30 @@ public class BedPlacementGUI {
 
           lines.add(team.getDisplayName(this.player) + ChatColor.GRAY + ": " + placedString);
         }
+
+        gui.addItem(
+            ItemStackUtil.setLines(this.plugin.getBedItem(this.team), lines),
+            (g0, g1, g2) -> {
+              if (index >= this.data.getBedsCount()) {
+                render(gui, false);
+                return;
+              }
+
+              callListener(Optional.of(index));
+              gui.closeAll();
+            }, AddItemCondition.withinY(3, 5));
       }
 
       for (int y = 3; y < gui.getHeight(); y++)
         gui.formatRow(y, CenterFormat.CENTRALIZED_EVEN);
     }
+  }
+
+  private void callListener(Optional<Integer> data) {
+    if (this.listener == null)
+      return;
+
+    this.listener = null;
+    this.listener.accept(data);
   }
 }
