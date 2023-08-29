@@ -40,5 +40,7 @@ public class BedPlacementListener implements Listener {
           );
         }
     );
+
+    gui.open();
   }
 }

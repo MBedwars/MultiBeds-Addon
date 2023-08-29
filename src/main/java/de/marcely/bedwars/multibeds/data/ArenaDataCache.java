@@ -1,12 +1,12 @@
 package de.marcely.bedwars.multibeds.data;
 
 import de.marcely.bedwars.api.arena.Arena;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 public class ArenaDataCache {
 
-  private final Map<Arena, ArenaData> cache = new HashMap<>();
+  private final Map<Arena, ArenaData> cache = new IdentityHashMap<>();
 
   public ArenaData get(Arena arena) {
     // from cache
